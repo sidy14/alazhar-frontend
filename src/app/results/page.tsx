@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import api from '../../lib/api';
-import { Filter, Printer, Loader2, Trophy } from 'lucide-react';
+import { Printer, Loader2, Trophy } from 'lucide-react';
 
 export default function ResultsWallPage() {
   const [branches, setBranches] = useState<any[]>([]);
@@ -17,9 +17,13 @@ export default function ResultsWallPage() {
 
   useEffect(() => {
     const loadData = async () => {
-      const [bRes, cRes] = await Promise.all([api.get('/branches'), api.get('/classrooms')]);
-      setBranches(bRes.data);
-      setClassrooms(cRes.data);
+      try {
+        const [bRes, cRes] = await Promise.all([api.get('/branches'), api.get('/classrooms')]);
+        setBranches(bRes.data);
+        setClassrooms(cRes.data);
+      } catch (err) {
+        console.error("Failed to load data");
+      }
     };
     loadData();
   }, []);
@@ -91,46 +95,45 @@ export default function ResultsWallPage() {
             <p className="mt-2 font-bold">العام الدراسي: {data.classroom?.academicYear?.name}</p>
           </div>
 
-          {/* (تعديل: الإحصائيات في الأعلى) */}
-          <div className="mb-6 grid grid-cols-6 gap-2 text-center border-2 border-black p-2 font-bold bg-gray-100 print:bg-gray-200 text-sm">
-            <div className="border-l border-gray-400">عدد المسجلين: {data.stats.totalRegistered}</div>
-            <div className="border-l border-gray-400">عدد المشاركين: {data.stats.participantsCount}</div>
-            <div className="border-l border-gray-400 text-red-600">الغائبون: {data.stats.absenteesCount}</div>
-            <div className="border-l border-gray-400 text-green-700">الناجحون: {data.results.filter((s:any) => s.isPassing).length}</div>
-            <div className="border-l border-gray-400 text-red-600">الراسبون: {data.results.filter((s:any) => !s.isPassing).length}</div>
-            <div>نسبة النجاح: {data.stats.participantsCount > 0 ? ((data.results.filter((s:any) => s.isPassing).length / data.stats.participantsCount) * 100).toFixed(1) : 0}%</div>
+          {/* الإحصائيات في الأعلى */}
+          <div className="mb-6 border-2 border-black p-2 bg-gray-100 print:bg-gray-200">
+            <div className="grid grid-cols-6 gap-2 text-center text-sm font-bold">
+              <div className="border-l border-gray-400 pl-2">عدد المسجلين: {data.stats.totalRegistered}</div>
+              <div className="border-l border-gray-400 pl-2">عدد المشاركين: {data.stats.participantsCount}</div>
+              <div className="border-l border-gray-400 pl-2 text-red-600">الغائبون: {data.stats.absenteesCount}</div>
+              <div className="border-l border-gray-400 pl-2 text-green-700">الناجحون: {data.results.filter((s:any) => s.isPassing).length}</div>
+              <div className="border-l border-gray-400 pl-2 text-red-600">الراسبون: {data.results.filter((s:any) => !s.isPassing).length}</div>
+              <div>نسبة النجاح: {data.stats.participantsCount > 0 ? ((data.results.filter((s:any) => s.isPassing).length / data.stats.participantsCount) * 100).toFixed(1) : 0}%</div>
+            </div>
           </div>
 
-          {/* (تعديل: جدول الترتيب) */}
+          {/* جدول الترتيب */}
           <table className="w-full border-collapse border-2 border-black text-center">
             <thead>
-              <tr className="bg-gray-200 print:bg-gray-100 text-black font-black text-lg">
-                <th className="border border-black p-3 w-32">رقم التسلسل</th>
-                <th className="border border-black p-3 w-24">رقم الجلوس</th>
-                <th className="border border-black p-3 text-right">الاسم واللقب</th>
-                <th className="border border-black p-3 w-32">المجموع</th>
-                <th className="border border-black p-3 w-32">المعدل / 20</th>
-                {/* الرتبة بجانب النتيجة */}
-                <th className="border border-black p-3 w-24">الرتبة</th>
-                <th className="border border-black p-3 w-32">النتيجة</th>
+              <tr className="bg-gray-200 print:bg-gray-100 text-black font-black text-lg border-b-2 border-black">
+                <th className="border-r border-black p-3 w-32">رقم التسلسل</th>
+                <th className="border-r border-black p-3 w-24">رقم الجلوس</th>
+                <th className="border-r border-black p-3 text-right">الاسم واللقب</th>
+                <th className="border-r border-black p-3 w-32">المجموع</th>
+                <th className="border-r border-black p-3 w-32">المعدل / 20</th>
+                <th className="border-r border-black p-3 w-24">الرتبة</th>
+                <th className="border-r border-black p-3 w-32">النتيجة</th>
               </tr>
             </thead>
             <tbody>
               {data.results.map((student: any) => (
                 <tr key={student.studentId} className="border-b border-black hover:bg-gray-50 print:hover:bg-transparent">
-                  <td className="border border-black p-2 font-mono font-bold">{student.studentId}</td>
-                  <td className="border border-black p-2 font-mono">{student.seatNumber}</td>
-                  <td className="border border-black p-2 text-right font-bold text-lg px-4">{student.studentName}</td>
-                  <td className="border border-black p-2">{student.hasMarks ? student.totalScore : '-'}</td>
-                  <td className="border border-black p-2 font-bold text-lg">{student.hasMarks ? Number(student.average).toFixed(2) : '-'}</td>
+                  <td className="border-r border-black p-2 font-mono font-bold">{student.studentId}</td>
+                  <td className="border-r border-black p-2 font-mono">{student.seatNumber}</td>
+                  <td className="border-r border-black p-2 text-right font-bold text-lg px-4">{student.studentName}</td>
+                  <td className="border-r border-black p-2">{student.hasMarks ? student.totalScore : '-'}</td>
+                  <td className="border-r border-black p-2 font-bold text-lg">{student.hasMarks ? Number(student.average).toFixed(2) : '-'}</td>
                   
-                  {/* عمود الرتبة */}
-                  <td className={`border border-black p-2 font-black text-xl ${student.rank <= 3 ? 'text-blue-800' : ''}`}>
+                  <td className={`border-r border-black p-2 font-black text-xl ${student.rank <= 3 ? 'text-blue-800' : ''}`}>
                     {student.hasMarks ? student.rank : '-'}
                   </td>
                   
-                  {/* عمود النتيجة */}
-                  <td className={`border border-black p-2 font-bold ${!student.hasMarks ? 'text-gray-500' : student.isPassing ? 'text-green-700' : 'text-red-600'}`}>
+                  <td className={`border-r border-black p-2 font-bold ${!student.hasMarks ? 'text-gray-500' : student.isPassing ? 'text-green-700' : 'text-red-600'}`}>
                     {!student.hasMarks ? 'غائب' : (student.isPassing ? 'ناجح' : 'راسب')}
                   </td>
                 </tr>

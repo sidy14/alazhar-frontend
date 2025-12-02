@@ -22,10 +22,19 @@ export default function TranscriptPage() {
       const transcriptRes = await api.get(`/students/${studentRes.data.id}/transcript`);
       setData(transcriptRes.data);
     } catch (err) {
-      alert('حدث خطأ');
+      alert('حدث خطأ أثناء جلب البيانات');
     } finally {
       setLoading(false);
     }
+  };
+
+  const getAppreciation = (score: number) => {
+    if (score >= 18) return 'ممتاز';
+    if (score >= 16) return 'جيد جداً';
+    if (score >= 14) return 'جيد';
+    if (score >= 12) return 'مستحسن';
+    if (score >= 10) return 'مقبول';
+    return 'ضعيف';
   };
 
   return (
@@ -48,6 +57,7 @@ export default function TranscriptPage() {
       {data && (
         <div className="max-w-[210mm] mx-auto bg-white p-8 shadow-lg print:shadow-none print:w-full print:p-0 border border-gray-300 print:border-none">
           
+          {/* الترويسة */}
           <div className="flex justify-between items-center border-b-2 border-black pb-4 mb-4">
             <div className="text-center">
               <h2 className="font-bold text-lg">مؤسسة الأزهر الإسلامية</h2>
@@ -81,17 +91,15 @@ export default function TranscriptPage() {
             </div>
           </div>
 
-          {/* جدول الدرجات مع عمود الملاحظات */}
           <table className="w-full border-collapse border-2 border-black text-center text-sm mb-4">
             <thead>
               <tr className="bg-gray-200 print:bg-gray-100 font-bold border-b-2 border-black">
-                <th className="border border-black p-2 w-1/4 text-right">المواد الدراسية</th>
-                <th className="border border-black p-2">المعامل</th>
-                <th className="border border-black p-2">الدرجة / 20</th>
-                <th className="border border-black p-2">المجموع</th>
-                <th className="border border-black p-2">التقدير</th>
-                {/* (إضافة) عمود ملاحظات المدرس */}
-                <th className="border border-black p-2 w-1/4">ملاحظات المدرس</th>
+                <th className="border-r border-black p-2 w-1/4 text-right">المواد الدراسية</th>
+                <th className="border-r border-black p-2">المعامل</th>
+                <th className="border-r border-black p-2">الدرجة / 20</th>
+                <th className="border-r border-black p-2">المجموع</th>
+                <th className="border-r border-black p-2">التقدير</th>
+                <th className="border-r border-black p-2 w-1/4">ملاحظات المدرس</th>
               </tr>
             </thead>
             <tbody>
@@ -102,7 +110,6 @@ export default function TranscriptPage() {
                   <td className="border-r border-black p-2 font-bold">{item.score}</td>
                   <td className="border-r border-black p-2">{item.total}</td>
                   <td className="border-r border-black p-2 text-xs">{item.appreciation}</td>
-                  {/* عرض الملاحظات */}
                   <td className="border-r border-black p-2 text-xs italic">{item.remarks || '-'}</td>
                 </tr>
               ))}
