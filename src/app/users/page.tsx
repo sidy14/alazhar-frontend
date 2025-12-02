@@ -11,7 +11,7 @@ export default function UsersManagementPage() {
   // حالات النوافذ المنبثقة
   const [resetUserId, setResetUserId] = useState<number | null>(null);
   const [newPassword, setNewPassword] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false); // نافذة الإضافة
+  const [showAddModal, setShowAddModal] = useState(false);
 
   // بيانات الموظف الجديد
   const [formData, setFormData] = useState({
@@ -20,7 +20,8 @@ export default function UsersManagementPage() {
     fullName: '',
     email: '',
     phoneNumber: '',
-    accountType: 'STAFF', // الافتراضي
+    accountType: 'STAFF', // الافتراضي: موظف
+    roleName: '',         // (جديد) المسمى الوظيفي الدقيق
     staffIdNumber: '',
     jobTitle: ''
   });
@@ -38,24 +39,26 @@ export default function UsersManagementPage() {
 
   useEffect(() => { fetchUsers(); }, []);
 
-  // 1. وظيفة إضافة مستخدم جديد (تستدعي HR API)
+  // إضافة مستخدم جديد
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // إرسال البيانات للخلفية
       await api.post('/hr/staff', formData);
-      alert('تم إضافة المستخدم بنجاح! ✅');
+      alert('تم إضافة المستخدم وتعيين الصلاحية بنجاح! ✅');
       setShowAddModal(false);
+      // إعادة تعيين النموذج
       setFormData({
         username: '', password: '', fullName: '', email: '', 
-        phoneNumber: '', accountType: 'STAFF', staffIdNumber: '', jobTitle: ''
+        phoneNumber: '', accountType: 'STAFF', roleName: '', staffIdNumber: '', jobTitle: ''
       });
-      fetchUsers(); // تحديث القائمة
+      fetchUsers();
     } catch (err) {
-      alert('فشل الإضافة. تأكد من عدم تكرار اسم المستخدم أو البريد.');
+      alert('فشل الإضافة. تأكد من البيانات.');
     }
   };
 
-  // 2. تغيير كلمة المرور
+  // تغيير كلمة المرور
   const handleResetPassword = async () => {
     if (!newPassword || newPassword.length < 6) {
       alert('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
@@ -71,12 +74,11 @@ export default function UsersManagementPage() {
     }
   };
 
-  // 3. تفعيل/تعطيل الحساب
+  // تفعيل/تعطيل الحساب
   const handleToggleStatus = async (userId: number, currentStatus: boolean) => {
     if(!confirm(currentStatus ? 'هل أنت متأكد من تعطيل هذا الحساب؟' : 'هل تريد تفعيل الحساب؟')) return;
     try {
       await api.patch(`/users/${userId}/toggle-status`);
-      // تحديث محلي سريع
       setUsers(users.map(u => u.id === userId ? {...u, isActive: !u.isActive} : u));
     } catch (err) {
       alert('حدث خطأ');
@@ -88,7 +90,6 @@ export default function UsersManagementPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-8" dir="rtl">
       
-      {/* الرأس مع زر الإضافة */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
           <ShieldAlert className="text-red-600"/> إدارة المستخدمين والأمان
@@ -108,7 +109,7 @@ export default function UsersManagementPage() {
             <tr>
               <th className="p-4">الاسم الكامل</th>
               <th className="p-4">اسم المستخدم</th>
-              <th className="p-4">النوع</th>
+              <th className="p-4">الوظيفة (الصلاحية)</th>
               <th className="p-4">الحالة</th>
               <th className="p-4">إجراءات الأمان</th>
             </tr>
@@ -119,7 +120,8 @@ export default function UsersManagementPage() {
                 <td className="p-4 font-bold text-gray-800">{user.fullName}</td>
                 <td className="p-4 font-mono text-blue-600 bg-blue-50 inline-block rounded px-2 my-2 mx-2 text-sm">{user.username}</td>
                 <td className="p-4">
-                   <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                   <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-bold border">
+                     {/* عرض اسم الدور بشكل مقروء */}
                      {user.assignments[0]?.role?.roleName || user.accountType}
                    </span>
                 </td>
@@ -129,10 +131,10 @@ export default function UsersManagementPage() {
                   </span>
                 </td>
                 <td className="p-4 flex gap-3 items-center">
-                  <button onClick={() => setResetUserId(user.id)} className="text-gray-500 hover:text-blue-600 flex items-center gap-1 text-sm border px-2 py-1 rounded">
+                  <button onClick={() => setResetUserId(user.id)} className="text-gray-500 hover:text-blue-600 flex items-center gap-1 text-sm border px-2 py-1 rounded hover:bg-blue-50">
                     <Lock size={14} /> كلمة المرور
                   </button>
-                  <button onClick={() => handleToggleStatus(user.id, user.isActive)} className={`flex items-center gap-1 text-sm border px-2 py-1 rounded ${user.isActive ? 'text-red-500 border-red-200' : 'text-green-500 border-green-200'}`}>
+                  <button onClick={() => handleToggleStatus(user.id, user.isActive)} className={`flex items-center gap-1 text-sm border px-2 py-1 rounded ${user.isActive ? 'text-red-500 border-red-200 hover:bg-red-50' : 'text-green-500 border-green-200 hover:bg-green-50'}`}>
                     <Power size={14} /> {user.isActive ? 'تعطيل' : 'تفعيل'}
                   </button>
                 </td>
@@ -142,35 +144,75 @@ export default function UsersManagementPage() {
         </table>
       </div>
 
-      {/* نافذة إضافة مستخدم جديد (Modal) */}
+      {/* نافذة الإضافة (Modal) */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white p-6 rounded-xl w-full max-w-2xl shadow-2xl">
+          <div className="bg-white p-6 rounded-xl w-full max-w-2xl shadow-2xl animate-in zoom-in duration-200">
             <div className="flex justify-between items-center mb-6 border-b pb-4">
               <h3 className="font-bold text-xl text-blue-800 flex items-center gap-2"><Plus /> إضافة موظف جديد</h3>
               <button onClick={() => setShowAddModal(false)}><X className="text-gray-400 hover:text-red-500"/></button>
             </div>
             
             <form onSubmit={handleCreateUser} className="grid gap-4 md:grid-cols-2">
-              <div><label className="block text-sm mb-1">الاسم الكامل</label><input required className="w-full border p-2 rounded" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} /></div>
-              <div><label className="block text-sm mb-1">البريد الإلكتروني</label><input required type="email" className="w-full border p-2 rounded" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
-              <div><label className="block text-sm mb-1">رقم الهاتف</label><input required className="w-full border p-2 rounded" value={formData.phoneNumber} onChange={e => setFormData({...formData, phoneNumber: e.target.value})} /></div>
-              <div><label className="block text-sm mb-1">نوع الحساب</label>
-                <select className="w-full border p-2 rounded bg-white" value={formData.accountType} onChange={e => setFormData({...formData, accountType: e.target.value})}>
+              <div><label className="block text-sm mb-1 font-medium">الاسم الكامل</label><input required className="w-full border p-2 rounded" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} /></div>
+              <div><label className="block text-sm mb-1 font-medium">البريد الإلكتروني</label><input required type="email" className="w-full border p-2 rounded" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
+              <div><label className="block text-sm mb-1 font-medium">رقم الهاتف</label><input required className="w-full border p-2 rounded" value={formData.phoneNumber} onChange={e => setFormData({...formData, phoneNumber: e.target.value})} /></div>
+              
+              {/* اختيار النوع التقني */}
+              <div>
+                <label className="block text-sm mb-1 font-bold text-gray-700">القسم (النوع)</label>
+                <select 
+                  className="w-full border p-2 rounded bg-gray-50" 
+                  value={formData.accountType} 
+                  onChange={e => setFormData({...formData, accountType: e.target.value, roleName: ''})}
+                >
                   <option value="STAFF">إداري / مالي</option>
-                  <option value="TEACHER">أستاذ</option>
+                  <option value="TEACHER">هيئة التدريس</option>
                 </select>
               </div>
-              <div><label className="block text-sm mb-1">اسم المستخدم (للدخول)</label><input required className="w-full border p-2 rounded bg-blue-50" value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} /></div>
-              <div><label className="block text-sm mb-1">كلمة المرور</label><input required type="password" className="w-full border p-2 rounded bg-blue-50" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} /></div>
-              
-              <div className="md:col-span-2 border-t pt-4 mt-2"><h4 className="font-bold text-gray-500 mb-2 text-sm">بيانات الوظيفة</h4></div>
-              <div><label className="block text-sm mb-1">الرقم الوظيفي (ID)</label><input required className="w-full border p-2 rounded" placeholder="مثال: T-2025-005" value={formData.staffIdNumber} onChange={e => setFormData({...formData, staffIdNumber: e.target.value})} /></div>
-              <div><label className="block text-sm mb-1">المسمى الوظيفي</label><input required className="w-full border p-2 rounded" placeholder="مثال: محاسب / أستاذ" value={formData.jobTitle} onChange={e => setFormData({...formData, jobTitle: e.target.value})} /></div>
+
+              {/* اختيار الوظيفة الدقيقة (بناءً على النوع) */}
+              <div className="md:col-span-2 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                <label className="block text-sm mb-2 font-bold text-blue-800">حدد الوظيفة والصلاحية:</label>
+                <select 
+                  className="w-full border-2 border-blue-200 p-2 rounded bg-white focus:border-blue-500 outline-none" 
+                  value={formData.roleName} 
+                  onChange={e => setFormData({...formData, roleName: e.target.value})}
+                  required
+                >
+                  <option value="">-- اختر الوظيفة --</option>
+                  
+                  {formData.accountType === 'STAFF' && (
+                    <>
+                      <optgroup label="الإدارة العليا">
+                        <option value="DIRECTOR_GENERAL">المدير العام</option>
+                        <option value="FINANCE_HEAD">المراقب المالي العام</option>
+                      </optgroup>
+                      <optgroup label="إدارة المراكز والفروع">
+                        <option value="CENTER_MANAGER">مدير مركز</option>
+                        <option value="BRANCH_MANAGER">مدير فرع / نائب مدير</option>
+                        <option value="REGISTRATION_OFFICER">مراقب (مسؤول التسجيل)</option>
+                        <option value="FINANCE_OFFICER">أمين صندوق (المسؤول المالي)</option>
+                      </optgroup>
+                    </>
+                  )}
+
+                  {formData.accountType === 'TEACHER' && (
+                    <option value="TEACHER">أستاذ (مدرس)</option>
+                  )}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">سيتم منح الصلاحيات تلقائياً بناءً على هذا الاختيار.</p>
+              </div>
+
+              <div className="md:col-span-2 border-t pt-4 mt-2"><h4 className="font-bold text-gray-500 mb-2 text-sm">بيانات الدخول والملف</h4></div>
+              <div><label className="block text-sm mb-1">اسم المستخدم</label><input required className="w-full border p-2 rounded bg-yellow-50" value={formData.username} onChange={e => setFormData({...formData, username: e.target.value})} /></div>
+              <div><label className="block text-sm mb-1">كلمة المرور</label><input required type="password" className="w-full border p-2 rounded bg-yellow-50" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} /></div>
+              <div><label className="block text-sm mb-1">الرقم الوظيفي (ID)</label><input required className="w-full border p-2 rounded" placeholder="مثال: T-005" value={formData.staffIdNumber} onChange={e => setFormData({...formData, staffIdNumber: e.target.value})} /></div>
+              <div><label className="block text-sm mb-1">المسمى الوظيفي (للعرض)</label><input required className="w-full border p-2 rounded" placeholder="محاسب فرع.." value={formData.jobTitle} onChange={e => setFormData({...formData, jobTitle: e.target.value})} /></div>
 
               <div className="md:col-span-2 flex justify-end gap-2 mt-4">
                 <button type="button" onClick={() => setShowAddModal(false)} className="text-gray-500 px-6 py-2 hover:bg-gray-100 rounded">إلغاء</button>
-                <button type="submit" className="bg-blue-600 text-white px-8 py-2 rounded hover:bg-blue-700 font-bold flex items-center gap-2"><Save size={18}/> حفظ البيانات</button>
+                <button type="submit" className="bg-green-600 text-white px-8 py-2 rounded hover:bg-green-700 font-bold flex items-center gap-2"><Save size={18}/> حفظ وتعيين</button>
               </div>
             </form>
           </div>
